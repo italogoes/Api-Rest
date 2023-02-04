@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Api com axios e jwt</title>
+</head>
+
+<body>
+    <h2>Login</h2>
+    <input type="text" name="email" id="email" placeholder="Digite seu email">
+    <input type="password" name="password" id="password" placeholder="Digite sua senha">
+    <button onclick="login()">Entrar</button>
+
+    <h2>Lista de Games</h2>
+    <button id="atualizar-lista">Atualizar Lista</button>
+    <ul id="games">
+
+    </ul>
+
+    <h2>Novo Game</h2>
+    <input type="text" name="title" id="title" placeholder="Título">
+    <input type="number" name="year" id="year" placeholder="Ano">
+    <input type="number" name="price" id="price" placeholder="Preço">
+    <button type="button" onclick="criarGame()">Criar novo game</button>
+
+    <hr>
+
+    <h2>Editar Game</h2>
+    <input type="text" name="idEdit" id="idEdit" placeholder="Id" readonly>
+    <input type="text" name="titleEdit" id="titleEdit" placeholder="Título">
+    <input type="number" name="yearEdit" id="yearEdit" placeholder="Ano">
+    <input type="number" name="priceEdit" id="priceEdit" placeholder="Preço">
+    <button type="button" onclick="upDateGame()">Editar game</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+
+        const atualizarLista = document.getElementById('atualizar-lista');
+        atualizarLista.addEventListener('click', () => {
+            location.reload()
+        })
+
+        var axiosConfig = {
+            headers: {
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            }
+        }
+
+        function login() {
+            var emailField = document.getElementById('email')
+            var passwordField = document.getElementById('password')
+
+            var email = emailField.value
+            var password = passwordField.value
+
+            axios.post('http://localhost:5000/auth', {
+                email,
+                password
+            }).then(res => {
+                var token = res.data.token
+                localStorage.setItem('token', token)
+                axiosConfig.headers.Authorization = 'Bearer ' + localStorage.getItem('token')
+                console.log(res.data)
+                location.reload()
+
+            }).catch(err => {
+                alert('Login incorreto')
+            })
+        }
+
+        function loadForm(ListItem) {
+            console.log(ListItem)
+            var id = ListItem.getAttribute('data-id')
+            var title = ListItem.getAttribute('data-title')
+            var year = ListItem.getAttribute('data-year')
+            var price = ListItem.getAttribute('data-price')
+
+            document.getElementById('idEdit').value = id
+            document.getElementById('titleEdit').value = title
+            document.getElementById('yearEdit').value = year
+            document.getElementById('priceEdit').value = price
+
+        }
+
+        function upDateGame() {
+            var idInput = document.getElementById('idEdit')
+            var titleInput = document.getElementById('titleEdit')
+            var yearInput = document.getElementById('yearEdit')
+            var priceInput = document.getElementById('priceEdit')
+
+            var games = {
+                title: titleInput.value,
+                year: yearInput.value,
+                price: priceInput.value
+            }
+
+            var id = idInput.value
+
+            axios.put('http://localhost:5000/game/' + id, games, axiosConfig).then(response => {
+                if (response.status == 200) {
+                    alert('Game cadastrado')
+                }
+            }).catch(err => {
+                console.log(err)
+            })
+        }
+
+        //aqui eu passo o metodo da rota que eu quero, tipo, get, post, put e delete
+        //no response eu passo os dados da api
+        axios.get("http://localhost:5000/games", axiosConfig).then(response => {
+            var games = response.data
+            var list = document.getElementById('games')
+
+            games.forEach(game => {
+                var item = document.createElement('li')
+                item.setAttribute('data-id', game.id)
+                item.setAttribute('data-title', game.title)
+                item.setAttribute('data-year', game.year)
+                item.setAttribute('data-price', game.price)
+
+                item.innerHTML = game.id + ' - ' + game.title + ' - ' + game.price
+
+                var deleteBtn = document.createElement("button");
+                deleteBtn.innerHTML = 'Deletar'
+                deleteBtn.addEventListener('click', function () {
+                    deleteGame(item)
+                })
+
+                var editBtn = document.createElement('button')
+                editBtn.innerHTML = 'Editar'
+                editBtn.addEventListener('click', function () {
+                    loadForm(item)
+                })
+
+                item.appendChild(editBtn)
+                item.appendChild(deleteBtn)
+
+                list.appendChild(item)
+            });
+        }).catch(error => {
+            console.log(error)
+        })
+
+        //cadastrando novo jogos na minha api
+        function criarGame() {
+            var titleInput = document.getElementById('title')
+            var yearInput = document.getElementById('year')
+            var priceInput = document.getElementById('price')
+
+            var games = {
+                title: titleInput.value,
+                year: yearInput.value,
+                price: priceInput.value
+            }
+
+            axios.post('http://localhost:5000/game', games, axiosConfig).then(response => {
+                if (response.status == 200) {
+                    alert('Game cadastrado')
+                }
+            }).catch(err => {
+                console.log(err)
+            })
+        }
+
+        //deletando game da api
+        function deleteGame(ListItem) {
+            var id = ListItem.getAttribute('data-id')
+            axios.delete('http://localhost:5000/game/' + id, axiosConfig).then(response => {
+                alert('game deletado')
+            }).catch(err => {
+                console.log(err)
+            })
+        }
+
+
+    </script>
+</body>
+
+</html>
